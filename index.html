@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShubhamNotes — Smart Notes for Smart Students</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0e0c; --paper: #faf8f3; --accent: #e84b2f;
+    --accent2: #f5a623; --muted: #7a7570; --card: #ffffff; --border: #e8e3d9;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); }
+
+  /* NAVBAR */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1.2rem 5%; border-bottom: 1.5px solid var(--border);
+    position: sticky; top: 0;
+    background: rgba(250,248,243,0.92); backdrop-filter: blur(12px); z-index: 100;
+  }
+  .logo { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 900; }
+  .logo span { color: var(--accent); }
+  nav ul { list-style: none; display: flex; gap: 2rem; }
+  nav ul li a { text-decoration: none; color: var(--muted); font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+  nav ul li a:hover { color: var(--ink); }
+  .nav-right { display: flex; gap: 0.8rem; align-items: center; }
+  #auth-btn, #logout-btn {
+    padding: 0.5rem 1.2rem; border-radius: 100px; border: none;
+    cursor: pointer; font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500;
+    transition: all 0.2s;
+  }
+  #auth-btn { background: var(--ink); color: white; }
+  #auth-btn:hover { background: var(--accent); }
+  #logout-btn { background: transparent; border: 1.5px solid var(--border); color: var(--muted); display: none; }
+  #logout-btn:hover { border-color: var(--accent); color: var(--accent); }
+  #user-name { font-size: 0.85rem; color: var(--muted); display: none; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5); backdrop-filter: blur(4px);
+    z-index: 1000; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; border-radius: 20px; padding: 2.5rem;
+    width: 90%; max-width: 420px; position: relative;
+    box-shadow: 0 24px 80px rgba(0,0,0,0.15);
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .modal-close {
+    position: absolute; top: 1.2rem; right: 1.2rem;
+    background: none; border: none; font-size: 1.3rem; cursor: pointer; color: var(--muted);
+  }
+  .modal h2 { font-family: 'Playfair Display', serif; font-size: 1.6rem; margin-bottom: 0.3rem; }
+  .modal p { color: var(--muted); font-size: 0.88rem; margin-bottom: 1.8rem; }
+  .tab-btns { display: flex; gap: 0; margin-bottom: 1.8rem; border: 1.5px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .tab-btn {
+    flex: 1; padding: 0.6rem; border: none; background: white;
+    font-family: 'DM Sans', sans-serif; font-size: 0.88rem; font-weight: 500; cursor: pointer;
+    transition: all 0.2s; color: var(--muted);
+  }
+  .tab-btn.active { background: var(--ink); color: white; }
+  .form-group { margin-bottom: 1.2rem; }
+  .form-group label { display: block; font-size: 0.82rem; font-weight: 500; margin-bottom: 0.4rem; color: var(--ink); }
+  .form-group input {
+    width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--border);
+    border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    outline: none; transition: border-color 0.2s;
+  }
+  .form-group input:focus { border-color: var(--accent); }
+  .submit-btn {
+    width: 100%; padding: 0.85rem; background: var(--accent); color: white;
+    border: none; border-radius: 100px; font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem; font-weight: 500; cursor: pointer; transition: all 0.2s;
+    margin-top: 0.5rem;
+  }
+  .submit-btn:hover { background: #c43d24; }
+  .google-btn {
+    width: 100%; padding: 0.75rem; background: white; color: var(--ink);
+    border: 1.5px solid var(--border); border-radius: 100px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500;
+    cursor: pointer; transition: all 0.2s; display: flex; align-items: center;
+    justify-content: center; gap: 0.6rem; margin-top: 0.8rem;
+  }
+  .google-btn:hover { border-color: var(--ink); }
+  .divider { text-align: center; color: var(--muted); font-size: 0.8rem; margin: 0.8rem 0; }
+  .auth-msg { font-size: 0.82rem; text-align: center; margin-top: 0.8rem; padding: 0.6rem; border-radius: 8px; display: none; }
+  .auth-msg.error { background: #ffeaea; color: #c0392b; display: block; }
+  .auth-msg.success { background: #eafaf1; color: #1e8449; display: block; }
+
+  /* HERO */
+  .hero { display: grid; grid-template-columns: 1fr 1fr; gap: 3rem; align-items: center; padding: 5rem 5% 4rem; max-width: 1200px; margin: 0 auto; }
+  .hero-tag { display: inline-block; background: #fff3cd; color: #b7791f; font-size: 0.75rem; font-weight: 500; padding: 0.3rem 0.8rem; border-radius: 100px; border: 1px solid #f5a62344; margin-bottom: 1.2rem; }
+  .hero h1 { font-family: 'Playfair Display', serif; font-size: clamp(2.5rem, 5vw, 4rem); line-height: 1.1; letter-spacing: -2px; margin-bottom: 1.2rem; }
+  .hero h1 em { font-style: italic; color: var(--accent); }
+  .hero p { color: var(--muted); font-size: 1.05rem; line-height: 1.7; max-width: 460px; margin-bottom: 2rem; }
+  .hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .btn-primary { background: var(--accent); color: white; padding: 0.8rem 2rem; border-radius: 100px; text-decoration: none; font-weight: 500; transition: all 0.2s; box-shadow: 0 4px 15px #e84b2f33; }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px #e84b2f44; }
+  .btn-secondary { background: transparent; color: var(--ink); padding: 0.8rem 2rem; border-radius: 100px; text-decoration: none; font-weight: 500; border: 1.5px solid var(--border); transition: all 0.2s; }
+  .btn-secondary:hover { border-color: var(--ink); }
+  .hero-visual { position: relative; height: 420px; }
+  .floating-card { background: white; border-radius: 16px; padding: 1.5rem; box-shadow: 0 8px 40px rgba(0,0,0,0.08); position: absolute; border: 1px solid var(--border); animation: float 4s ease-in-out infinite; }
+  .card-1 { width: 260px; top: 20px; left: 20px; animation-delay: 0s; }
+  .card-2 { width: 220px; top: 140px; right: 0; animation-delay: 1s; }
+  .card-3 { width: 200px; bottom: 30px; left: 60px; animation-delay: 2s; }
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+  .card-subject { font-size: 0.7rem; font-weight: 500; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.5rem; }
+  .card-title { font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; margin-bottom: 0.8rem; }
+  .card-lines { display: flex; flex-direction: column; gap: 0.4rem; }
+  .line { height: 7px; border-radius: 4px; background: var(--border); }
+  .line.short { width: 65%; } .line.medium { width: 85%; } .line.long { width: 100%; }
+  .card-badge { display: inline-flex; align-items: center; gap: 0.3rem; background: #e8f5e9; color: #2e7d32; font-size: 0.72rem; font-weight: 500; padding: 0.25rem 0.6rem; border-radius: 100px; margin-top: 0.8rem; }
+
+  /* STATS */
+  .stats-bar { border-top: 1.5px solid var(--border); border-bottom: 1.5px solid var(--border); display: flex; justify-content: center; gap: 4rem; padding: 1.5rem 5%; background: white; flex-wrap: wrap; }
+  .stat { text-align: center; }
+  .stat-num { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 900; color: var(--accent); }
+  .stat-label { font-size: 0.8rem; color: var(--muted); }
+
+  /* SECTIONS */
+  .section { max-width: 1200px; margin: 0 auto; padding: 4rem 5%; }
+  .section-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 2.5rem; }
+  .section-label { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent); margin-bottom: 0.4rem; }
+  .section-title { font-family: 'Playfair Display', serif; font-size: 2.2rem; font-weight: 900; letter-spacing: -1px; }
+  .see-all { color: var(--muted); text-decoration: none; font-size: 0.88rem; font-weight: 500; border-bottom: 1px solid var(--border); transition: all 0.2s; }
+  .see-all:hover { color: var(--ink); border-color: var(--ink); }
+
+  /* SUBJECTS */
+  .subjects-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 1rem; }
+  .subject-card { background: white; border: 1.5px solid var(--border); border-radius: 14px; padding: 1.4rem 1.2rem; text-decoration: none; color: var(--ink); transition: all 0.2s; cursor: pointer; }
+  .subject-card:hover { transform: translateY(-4px); box-shadow: 0 12px 30px rgba(0,0,0,0.07); border-color: var(--accent); }
+  .subject-icon { font-size: 2rem; margin-bottom: 0.8rem; display: block; }
+  .subject-name { font-weight: 500; font-size: 0.95rem; margin-bottom: 0.25rem; }
+  .subject-count { font-size: 0.78rem; color: var(--muted); }
+
+  /* NOTES */
+  .search-wrap { max-width: 600px; margin: 0 auto 3rem; position: relative; }
+  .search-wrap input { width: 100%; padding: 1rem 1.5rem 1rem 3.2rem; border: 1.5px solid var(--border); border-radius: 100px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; background: white; outline: none; transition: all 0.2s; }
+  .search-wrap input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px #e84b2f18; }
+  .search-icon { position: absolute; left: 1.2rem; top: 50%; transform: translateY(-50%); color: var(--muted); pointer-events: none; }
+  .notes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+  .note-card { background: white; border: 1.5px solid var(--border); border-radius: 16px; overflow: hidden; text-decoration: none; color: var(--ink); transition: all 0.2s; display: flex; flex-direction: column; }
+  .note-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,0.08); }
+  .note-header { padding: 1.5rem 1.5rem 1rem; border-bottom: 1px solid var(--border); }
+  .note-tags { display: flex; gap: 0.5rem; margin-bottom: 0.8rem; flex-wrap: wrap; }
+  .tag { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; padding: 0.2rem 0.6rem; border-radius: 100px; }
+  .tag-physics { background: #e3f2fd; color: #1565c0; }
+  .tag-chem { background: #f3e5f5; color: #6a1b9a; }
+  .tag-math { background: #e8f5e9; color: #2e7d32; }
+  .tag-bio { background: #fff3e0; color: #e65100; }
+  .tag-history { background: #fce4ec; color: #880e4f; }
+  .tag-geo { background: #e0f7fa; color: #00695c; }
+  .tag-free { background: #f5f5f5; color: #555; }
+  .tag-premium { background: #fff8e1; color: #f57f17; }
+  .note-title { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 700; line-height: 1.3; margin-bottom: 0.5rem; }
+  .note-desc { font-size: 0.85rem; color: var(--muted); line-height: 1.6; }
+  .note-footer { padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; }
+  .note-meta { font-size: 0.78rem; color: var(--muted); }
+  .download-btn { background: var(--ink); color: white; padding: 0.4rem 1rem; border-radius: 100px; font-size: 0.78rem; font-weight: 500; border: none; cursor: pointer; transition: all 0.2s; }
+  .download-btn:hover { background: var(--accent); }
+  .premium-btn { background: var(--accent2); color: white; }
+  .premium-btn:hover { background: #d4881e !important; }
+  .loading-notes { text-align: center; padding: 3rem; color: var(--muted); }
+
+  /* PAYMENT MODAL */
+  .pay-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+  .pay-modal.open { display: flex; }
+  .pay-box { background: white; border-radius: 20px; padding: 2rem; width: 90%; max-width: 380px; text-align: center; animation: slideUp 0.3s ease; }
+  .pay-box h3 { font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 0.5rem; }
+  .pay-box p { color: var(--muted); font-size: 0.88rem; margin-bottom: 1.5rem; }
+  .pay-price { font-size: 2rem; font-weight: 700; color: var(--accent); margin-bottom: 1.5rem; }
+  .pay-now-btn { width: 100%; padding: 0.85rem; background: var(--accent); color: white; border: none; border-radius: 100px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; font-weight: 500; cursor: pointer; margin-bottom: 0.8rem; }
+  .pay-cancel { background: none; border: none; color: var(--muted); font-size: 0.85rem; cursor: pointer; }
+
+  /* FOOTER */
+  footer { border-top: 1.5px solid var(--border); padding: 2.5rem 5%; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; background: white; }
+  .footer-logo { font-family: 'Playfair Display', serif; font-size: 1.2rem; font-weight: 900; }
+  .footer-logo span { color: var(--accent); }
+  footer p { font-size: 0.82rem; color: var(--muted); }
+  .footer-links { display: flex; gap: 1.5rem; }
+  .footer-links a { font-size: 0.82rem; color: var(--muted); text-decoration: none; transition: color 0.2s; }
+  .footer-links a:hover { color: var(--ink); }
+
+  @media (max-width: 768px) {
+    .hero { grid-template-columns: 1fr; padding: 2.5rem 5%; }
+    .hero-visual { display: none; }
+    nav ul { display: none; }
+    .section-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- AUTH MODAL -->
+<div class="modal-overlay" id="auth-modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <h2>Welcome Back 👋</h2>
+    <p>Login karke notes download karo</p>
+    <div class="tab-btns">
+      <button class="tab-btn active" onclick="switchTab('login')">Login</button>
+      <button class="tab-btn" onclick="switchTab('signup')">Sign Up</button>
+    </div>
+    <!-- LOGIN FORM -->
+    <div id="login-form">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="login-email" placeholder="tumhara@email.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="login-pass" placeholder="••••••••">
+      </div>
+      <button class="submit-btn" onclick="loginUser()">Login Karo →</button>
+      <div class="divider">ya</div>
+      <button class="google-btn" onclick="googleLogin()">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.7 0 6.7 5.5 2.8 13.6l7.8 6C12.4 13.4 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.2-4.5 6.8l7 5.5c4.1-3.8 6.5-9.4 6.5-16.3z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6l-7.8-6C1 16.4 0 20.1 0 24s1 7.6 2.8 10.6l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7-5.5c-2 1.4-4.6 2.2-8.2 2.2-6.2 0-11.6-3.9-13.4-9.6l-7.8 6C6.7 42.5 14.7 48 24 48z"/></svg>
+        Google se Login
+      </button>
+    </div>
+    <!-- SIGNUP FORM -->
+    <div id="signup-form" style="display:none">
+      <div class="form-group">
+        <label>Naam</label>
+        <input type="text" id="signup-name" placeholder="Tumhara naam">
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="signup-email" placeholder="tumhara@email.com">
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="signup-pass" placeholder="Min 6 characters">
+      </div>
+      <button class="submit-btn" onclick="signupUser()">Account Banao →</button>
+      <div class="divider">ya</div>
+      <button class="google-btn" onclick="googleLogin()">
+        <svg width="18" height="18" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.8 2.5 30.2 0 24 0 14.7 0 6.7 5.5 2.8 13.6l7.8 6C12.4 13.4 17.8 9.5 24 9.5z"/><path fill="#4285F4" d="M46.1 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.2-4.5 6.8l7 5.5c4.1-3.8 6.5-9.4 6.5-16.3z"/><path fill="#FBBC05" d="M10.6 28.6c-.5-1.4-.8-2.9-.8-4.6s.3-3.2.8-4.6l-7.8-6C1 16.4 0 20.1 0 24s1 7.6 2.8 10.6l7.8-6z"/><path fill="#34A853" d="M24 48c6.2 0 11.4-2 15.2-5.5l-7-5.5c-2 1.4-4.6 2.2-8.2 2.2-6.2 0-11.6-3.9-13.4-9.6l-7.8 6C6.7 42.5 14.7 48 24 48z"/></svg>
+        Google se Sign Up
+      </button>
+    </div>
+    <div class="auth-msg" id="auth-msg"></div>
+  </div>
+</div>
+
+<!-- PAYMENT MODAL -->
+<div class="pay-modal" id="pay-modal">
+  <div class="pay-box">
+    <h3 id="pay-title">Premium Note</h3>
+    <p>Ek baar pay karo, lifetime access pao</p>
+    <div class="pay-price" id="pay-amount">₹99</div>
+    <button class="pay-now-btn" onclick="initiatePayment()">💳 Razorpay se Pay Karo</button>
+    <button class="pay-cancel" onclick="document.getElementById('pay-modal').classList.remove('open')">Cancel</button>
+  </div>
+</div>
+
+<!-- NAVBAR -->
+<nav>
+  <div class="logo">Shubham<span>Notes</span></div>
+  <ul>
+    <li><a href="#">Home</a></li>
+    <li><a href="#subjects">Subjects</a></li>
+    <li><a href="#notes">Notes</a></li>
+    <li><a href="admin.html">Admin</a></li>
+  </ul>
+  <div class="nav-right">
+    <span id="user-name"></span>
+    <button id="auth-btn" onclick="openModal()">Login / Sign Up</button>
+    <button id="logout-btn" onclick="logoutUser()">Logout</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div>
+    <span class="hero-tag">📚 100% Free Notes Available</span>
+    <h1>Padho Smart,<br><em>Score Better.</em></h1>
+    <p>Physics, Chemistry, Math, Biology — sabhii subjects ke detailed notes ek jagah. Board exams se lekar JEE/NEET tak.</p>
+    <div class="hero-btns">
+      <a href="#notes" class="btn-primary">Notes Dekho →</a>
+      <a href="#subjects" class="btn-secondary">Subjects Browse Karo</a>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="floating-card card-1">
+      <div class="card-subject">⚛️ Physics</div>
+      <div class="card-title">Laws of Motion</div>
+      <div class="card-lines">
+        <div class="line long"></div><div class="line medium"></div>
+        <div class="line short"></div><div class="line long"></div>
+      </div>
+      <span class="card-badge">✓ Free Download</span>
+    </div>
+    <div class="floating-card card-2">
+      <div class="card-subject">🧪 Chemistry</div>
+      <div class="card-title">Organic Chemistry</div>
+      <div class="card-lines">
+        <div class="line long"></div><div class="line short"></div><div class="line medium"></div>
+      </div>
+    </div>
+    <div class="floating-card card-3">
+      <div class="card-subject">📐 Maths</div>
+      <div class="card-title">Integration</div>
+      <div class="card-lines">
+        <div class="line medium"></div><div class="line long"></div><div class="line short"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="stats-bar">
+  <div class="stat"><div class="stat-num" id="stat-notes">0</div><div class="stat-label">Notes Available</div></div>
+  <div class="stat"><div class="stat-num">12</div><div class="stat-label">Subjects</div></div>
+  <div class="stat"><div class="stat-num" id="stat-users">0</div><div class="stat-label">Students</div></div>
+  <div class="stat"><div class="stat-num">100%</div><div class="stat-label">Free Content</div></div>
+</div>
+
+<!-- SUBJECTS -->
+<section class="section" id="subjects">
+  <div class="section-header">
+    <div><div class="section-label">Browse by Subject</div><h2 class="section-title">Sabhi Subjects</h2></div>
+  </div>
+  <div class="subjects-grid">
+    <a href="#" class="subject-card" onclick="filterBySubject('Physics')"><span class="subject-icon">⚛️</span><div class="subject-name">Physics</div></a>
+    <a href="#" class="subject-card" onclick="filterBySubject('Chemistry')"><span class="subject-icon">🧪</span><div class="subject-name">Chemistry</div></a>
+    <a href="#" class="subject-card" onclick="filterBySubject('Mathematics')"><span class="subject-icon">📐</span><div class="subject-name">Mathematics</div></a>
+    <a href="#" class="subject-card" onclick="filterBySubject('Biology')"><span class="subject-icon">🧬</span><div class="subject-name">Biology</div></a>
+    <a href="#" class="subject-card" onclick="filterBySubject('Geography')"><span class="subject-icon">🌍</span><div class="subject-name">Geography</div></a>
+    <a href="#" class="subject-card" onclick="filterBySubject('History')"><span class="subject-icon">🏛️</span><div class="subject-name">History</div></a>
+    <a href="#" class="subject-card" onclick="filterBySubject('Hindi')"><span class="subject-icon">📖</span><div class="subject-name">Hindi</div></a>
+    <a href="#" class="subject-card" onclick="filterBySubject('English')"><span class="subject-icon">🌐</span><div class="subject-name">English</div></a>
+  </div>
+</section>
+
+<!-- NOTES -->
+<section class="section" id="notes">
+  <div class="section-header">
+    <div><div class="section-label">Latest & Popular</div><h2 class="section-title">Notes</h2></div>
+  </div>
+  <div class="search-wrap">
+    <span class="search-icon">🔍</span>
+    <input type="text" id="search-input" placeholder="Notes search karo... (e.g. Newton's Laws, Trigonometry)" oninput="searchNotes()">
+  </div>
+  <div class="notes-grid" id="notes-container">
+    <div class="loading-notes">⏳ Notes load ho rahe hain...</div>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-logo">Shubham<span>Notes</span></div>
+  <p>© 2025 ShubhamNotes — Made with ❤️ for Indian Students</p>
+  <div class="footer-links">
+    <a href="#">About</a><a href="#">Contact</a><a href="#">Privacy</a>
+  </div>
+</footer>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyD4FywhcPm-izOPO-MIEwhVovPAuCkNQzo",
+    authDomain: "shubhamnotes-cc06b.firebaseapp.com",
+    projectId: "shubhamnotes-cc06b",
+    storageBucket: "shubhamnotes-cc06b.firebasestorage.app",
+    messagingSenderId: "917281941942",
+    appId: "1:917281941942:web:283ab6b357ba7640e3f917",
+    measurementId: "G-79Z7J8LCY0"
+  };
+
+  // Initialize Firebase
+  const analytics = getAnalytics(app);
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const provider = new GoogleAuthProvider();
+
+  // AUTH STATE
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById('auth-btn').style.display = 'none';
+      document.getElementById('logout-btn').style.display = 'block';
+      document.getElementById('user-name').style.display = 'block';
+      document.getElementById('user-name').textContent = `👋 ${user.displayName || user.email.split('@')[0]}`;
+    } else {
+      document.getElementById('auth-btn').style.display = 'block';
+      document.getElementById('logout-btn').style.display = 'none';
+      document.getElementById('user-name').style.display = 'none';
+    }
+  });
+
+  // LOAD NOTES FROM FIRESTORE
+  let allNotes = [];
+  async function loadNotes(subjectFilter = null) {
+    const container = document.getElementById('notes-container');
+    container.innerHTML = '<div class="loading-notes">⏳ Notes load ho rahe hain...</div>';
+    try {
+      let q = subjectFilter
+        ? query(collection(db, 'notes'), where('subject', '==', subjectFilter), orderBy('createdAt', 'desc'))
+        : query(collection(db, 'notes'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      allNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      document.getElementById('stat-notes').textContent = allNotes.length + '+';
+      renderNotes(allNotes);
+    } catch (e) {
+      container.innerHTML = '<div class="loading-notes">⚠️ Notes load karne mein problem. Firebase config check karo.</div>';
+    }
+  }
+
+  function renderNotes(notes) {
+    const container = document.getElementById('notes-container');
+    if (notes.length === 0) { container.innerHTML = '<div class="loading-notes">Koi notes nahi mile 😔</div>'; return; }
+    const tagColorMap = { Physics: 'tag-physics', Chemistry: 'tag-chem', Mathematics: 'tag-math', Biology: 'tag-bio', History: 'tag-history', Geography: 'tag-geo' };
+    container.innerHTML = notes.map(note => `
+      <div class="note-card">
+        <div class="note-header">
+          <div class="note-tags">
+            <span class="tag ${tagColorMap[note.subject] || 'tag-free'}">${note.subject}</span>
+            <span class="tag ${note.isPremium ? 'tag-premium' : 'tag-free'}">${note.isPremium ? 'Premium' : 'Free'}</span>
+          </div>
+          <div class="note-title">${note.title}</div>
+          <div class="note-desc">${note.description}</div>
+        </div>
+        <div class="note-footer">
+          <span class="note-meta">📄 ${note.pages || '?'} pages · ${note.class || ''}</span>
+          ${note.isPremium
+            ? `<button class="download-btn premium-btn" onclick="showPayment('${note.id}', '${note.title}', ${note.price})">👑 ₹${note.price}</button>`
+            : `<button class="download-btn" onclick="downloadNote('${note.fileUrl}', '${note.id}')">Download</button>`}
+        </div>
+      </div>`).join('');
+  }
+
+  // SEARCH
+  window.searchNotes = function() {
+    const q = document.getElementById('search-input').value.toLowerCase();
+    const filtered = allNotes.filter(n => n.title.toLowerCase().includes(q) || n.description.toLowerCase().includes(q) || n.subject.toLowerCase().includes(q));
+    renderNotes(filtered);
+  };
+
+  // FILTER BY SUBJECT
+  window.filterBySubject = function(subject) {
+    document.getElementById('notes').scrollIntoView({ behavior: 'smooth' });
+    loadNotes(subject);
+  };
+
+  // DOWNLOAD
+  window.downloadNote = function(url, id) {
+    if (!auth.currentUser) { openModal(); return; }
+    window.open(url, '_blank');
+  };
+
+  // AUTH FUNCTIONS
+  window.loginUser = async function() {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-pass').value;
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+      closeModal(); showMsg('Login ho gaya! ✓', 'success');
+    } catch (e) { showMsg(getErrorMsg(e.code), 'error'); }
+  };
+
+  window.signupUser = async function() {
+    const name = document.getElementById('signup-name').value;
+    const email = document.getElementById('signup-email').value;
+    const pass = document.getElementById('signup-pass').value;
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, pass);
+      await updateProfile(cred.user, { displayName: name });
+      closeModal(); showMsg('Account ban gaya! ✓', 'success');
+    } catch (e) { showMsg(getErrorMsg(e.code), 'error'); }
+  };
+
+  window.googleLogin = async function() {
+    try {
+      await signInWithPopup(auth, provider);
+      closeModal();
+    } catch (e) { showMsg(getErrorMsg(e.code), 'error'); }
+  };
+
+  window.logoutUser = async function() {
+    await signOut(auth);
+  };
+
+  function getErrorMsg(code) {
+    const msgs = {
+      'auth/user-not-found': 'Email nahi mila. Sign up karo.',
+      'auth/wrong-password': 'Password galat hai.',
+      'auth/email-already-in-use': 'Yeh email already registered hai.',
+      'auth/weak-password': 'Password kam se kam 6 characters ka hona chahiye.',
+      'auth/invalid-email': 'Email sahi nahi hai.'
+    };
+    return msgs[code] || 'Kuch problem aayi. Dobara try karo.';
+  }
+
+  // PAYMENT
+  let currentNote = {};
+  window.showPayment = function(id, title, price) {
+    if (!auth.currentUser) { openModal(); return; }
+    currentNote = { id, title, price };
+    document.getElementById('pay-title').textContent = title;
+    document.getElementById('pay-amount').textContent = `₹${price}`;
+    document.getElementById('pay-modal').classList.add('open');
+  };
+
+  window.initiatePayment = function() {
+    // Razorpay integration — server.js se order_id lo
+    fetch('/create-order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ amount: currentNote.price * 100, noteId: currentNote.id })
+    })
+    .then(r => r.json())
+    .then(order => {
+      const options = {
+        key: 'YOUR_RAZORPAY_KEY_ID', // Razorpay dashboard se milega
+        amount: order.amount,
+        currency: 'INR',
+        name: 'ShubhamNotes',
+        description: currentNote.title,
+        order_id: order.id,
+        handler: function(response) {
+          // Payment verify karo server pe
+          fetch('/verify-payment', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...response, noteId: currentNote.id, userId: auth.currentUser.uid })
+          }).then(() => {
+            document.getElementById('pay-modal').classList.remove('open');
+            alert('Payment successful! Note download ho raha hai...');
+          });
+        },
+        prefill: { email: auth.currentUser.email },
+        theme: { color: '#e84b2f' }
+      };
+      new window.Razorpay(options).open();
+    });
+  };
+
+  // Load notes on start
+  loadNotes();
+</script>
+
+<!-- Razorpay SDK -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+  // UI helpers (non-module)
+  function openModal() { document.getElementById('auth-modal').classList.add('open'); }
+  function closeModal() { document.getElementById('auth-modal').classList.remove('open'); }
+  function switchTab(tab) {
+    document.getElementById('login-form').style.display = tab === 'login' ? 'block' : 'none';
+    document.getElementById('signup-form').style.display = tab === 'signup' ? 'block' : 'none';
+    document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', (i === 0 && tab === 'login') || (i === 1 && tab === 'signup')));
+  }
+  function showMsg(msg, type) {
+    const el = document.getElementById('auth-msg');
+    el.textContent = msg; el.className = `auth-msg ${type}`;
+  }
+  // Close modal on overlay click
+  document.getElementById('auth-modal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+</script>
+</body>
+</html>

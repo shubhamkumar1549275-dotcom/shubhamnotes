@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Panel — ShubhamNotes</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --ink: #0f0e0c; --paper: #faf8f3; --accent: #e84b2f; --muted: #7a7570; --border: #e8e3d9; --green: #2e7d32; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); min-height: 100vh; }
+
+  /* GATE */
+  #admin-gate { position: fixed; inset: 0; background: white; display: flex; align-items: center; justify-content: center; z-index: 999; }
+  .gate-box { text-align: center; padding: 2.5rem; max-width: 380px; width: 90%; }
+  .gate-box h2 { font-family: 'Playfair Display', serif; font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .gate-box p { color: var(--muted); font-size: 0.88rem; margin-bottom: 1.5rem; }
+  .gate-input { width: 100%; padding: 0.85rem 1.2rem; border: 1.5px solid var(--border); border-radius: 12px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; outline: none; margin-bottom: 1rem; }
+  .gate-input:focus { border-color: var(--accent); }
+  .gate-btn { width: 100%; padding: 0.85rem; background: var(--ink); color: white; border: none; border-radius: 100px; font-family: 'DM Sans', sans-serif; font-size: 0.95rem; cursor: pointer; }
+  .gate-btn:hover { background: var(--accent); }
+  .gate-err { color: var(--accent); font-size: 0.82rem; margin-top: 0.5rem; display: none; }
+
+  /* HEADER */
+  header { background: white; border-bottom: 1.5px solid var(--border); padding: 1rem 5%; display: flex; align-items: center; justify-content: space-between; }
+  .logo { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 700; }
+  .logo span { color: var(--accent); }
+  .admin-badge { background: var(--accent); color: white; font-size: 0.72rem; font-weight: 500; padding: 0.2rem 0.6rem; border-radius: 100px; letter-spacing: 0.05em; }
+  header a { color: var(--muted); text-decoration: none; font-size: 0.88rem; }
+
+  /* LAYOUT */
+  .admin-layout { display: grid; grid-template-columns: 260px 1fr; min-height: calc(100vh - 60px); }
+  .sidebar { background: white; border-right: 1.5px solid var(--border); padding: 2rem 1.5rem; }
+  .sidebar-title { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 1rem; }
+  .nav-item { display: flex; align-items: center; gap: 0.7rem; padding: 0.7rem 1rem; border-radius: 10px; cursor: pointer; font-size: 0.9rem; font-weight: 500; color: var(--muted); transition: all 0.2s; margin-bottom: 0.3rem; text-decoration: none; }
+  .nav-item:hover { background: var(--paper); color: var(--ink); }
+  .nav-item.active { background: var(--ink); color: white; }
+
+  /* MAIN */
+  .main { padding: 2.5rem; overflow-y: auto; }
+  .page { display: none; }
+  .page.active { display: block; }
+  .page-title { font-family: 'Playfair Display', serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 0.3rem; }
+  .page-subtitle { color: var(--muted); font-size: 0.88rem; margin-bottom: 2rem; }
+
+  /* STATS CARDS */
+  .stats-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 1.2rem; margin-bottom: 2.5rem; }
+  .stat-card { background: white; border: 1.5px solid var(--border); border-radius: 14px; padding: 1.5rem; }
+  .stat-icon { font-size: 1.5rem; margin-bottom: 0.5rem; }
+  .stat-val { font-family: 'Playfair Display', serif; font-size: 2rem; font-weight: 700; color: var(--accent); }
+  .stat-lbl { font-size: 0.8rem; color: var(--muted); margin-top: 0.2rem; }
+
+  /* UPLOAD FORM */
+  .form-card { background: white; border: 1.5px solid var(--border); border-radius: 16px; padding: 2rem; max-width: 680px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; }
+  .form-full { grid-column: 1 / -1; }
+  .form-group label { display: block; font-size: 0.82rem; font-weight: 500; margin-bottom: 0.4rem; }
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%; padding: 0.75rem 1rem; border: 1.5px solid var(--border);
+    border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    outline: none; transition: border-color 0.2s; background: white;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--accent); }
+  .form-group textarea { resize: vertical; min-height: 80px; }
+
+  /* FILE DROP */
+  .file-drop {
+    border: 2px dashed var(--border); border-radius: 12px; padding: 2.5rem 1.5rem;
+    text-align: center; cursor: pointer; transition: all 0.2s;
+    background: var(--paper);
+  }
+  .file-drop:hover, .file-drop.dragover { border-color: var(--accent); background: #fff5f3; }
+  .file-drop p { color: var(--muted); font-size: 0.88rem; margin-top: 0.5rem; }
+  .file-drop input[type="file"] { display: none; }
+  .file-name { font-size: 0.82rem; color: var(--green); margin-top: 0.5rem; font-weight: 500; }
+
+  /* PROGRESS */
+  .progress-bar { background: var(--border); border-radius: 100px; height: 6px; margin-top: 1.5rem; overflow: hidden; display: none; }
+  .progress-fill { height: 100%; background: var(--accent); border-radius: 100px; transition: width 0.3s; width: 0%; }
+
+  /* TOGGLE */
+  .toggle-row { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem 0; }
+  .toggle { position: relative; width: 44px; height: 24px; }
+  .toggle input { display: none; }
+  .slider { position: absolute; inset: 0; background: var(--border); border-radius: 100px; cursor: pointer; transition: 0.2s; }
+  .slider::before { content: ''; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; background: white; border-radius: 50%; transition: 0.2s; }
+  input:checked + .slider { background: var(--accent); }
+  input:checked + .slider::before { transform: translateX(20px); }
+
+  .submit-row { display: flex; gap: 1rem; margin-top: 1.5rem; }
+  .btn-submit { background: var(--accent); color: white; padding: 0.8rem 2rem; border: none; border-radius: 100px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+  .btn-submit:hover { background: #c43d24; }
+  .btn-reset { background: transparent; color: var(--muted); padding: 0.8rem 2rem; border: 1.5px solid var(--border); border-radius: 100px; font-family: 'DM Sans', sans-serif; font-size: 0.9rem; cursor: pointer; }
+
+  .upload-msg { padding: 0.8rem 1.2rem; border-radius: 10px; font-size: 0.88rem; margin-top: 1rem; display: none; }
+  .upload-msg.success { background: #e8f5e9; color: var(--green); display: block; }
+  .upload-msg.error { background: #ffeaea; color: #c0392b; display: block; }
+
+  /* NOTES TABLE */
+  .table-wrap { background: white; border: 1.5px solid var(--border); border-radius: 16px; overflow: hidden; }
+  .table-header { padding: 1.2rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+  .table-header h3 { font-size: 0.95rem; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; }
+  th { padding: 0.9rem 1.2rem; text-align: left; font-size: 0.78rem; font-weight: 500; letter-spacing: 0.05em; text-transform: uppercase; color: var(--muted); border-bottom: 1.5px solid var(--border); background: var(--paper); }
+  td { padding: 1rem 1.2rem; font-size: 0.88rem; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafafa; }
+  .pill { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 100px; font-size: 0.72rem; font-weight: 500; }
+  .pill-free { background: #e8f5e9; color: var(--green); }
+  .pill-premium { background: #fff8e1; color: #f57f17; }
+  .del-btn { background: none; border: none; color: #ccc; cursor: pointer; font-size: 1rem; transition: color 0.2s; }
+  .del-btn:hover { color: var(--accent); }
+
+  @media (max-width: 768px) {
+    .admin-layout { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+    .form-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ADMIN GATE (Password Protection) -->
+<div id="admin-gate">
+  <div class="gate-box">
+    <div style="font-size:2.5rem;margin-bottom:1rem;">🔐</div>
+    <h2>Admin Access</h2>
+    <p>Yeh page sirf Shubham ke liye hai</p>
+    <input type="password" class="gate-input" id="gate-pass" placeholder="Admin password daalo" onkeypress="if(event.key==='Enter')checkGate()">
+    <button class="gate-btn" onclick="checkGate()">Enter Karo →</button>
+    <div class="gate-err" id="gate-err">❌ Wrong password!</div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div style="display:flex;align-items:center;gap:1rem;">
+    <div class="logo">Shubham<span>Notes</span></div>
+    <span class="admin-badge">ADMIN</span>
+  </div>
+  <a href="index.html">← Website Pe Jao</a>
+</header>
+
+<!-- LAYOUT -->
+<div class="admin-layout">
+  <div class="sidebar">
+    <div class="sidebar-title">Navigation</div>
+    <a class="nav-item active" onclick="showPage('dashboard')">📊 Dashboard</a>
+    <a class="nav-item" onclick="showPage('upload')">⬆️ Note Upload</a>
+    <a class="nav-item" onclick="showPage('manage')">📋 Notes Manage</a>
+  </div>
+
+  <div class="main">
+    <!-- DASHBOARD -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-title">Dashboard</div>
+      <div class="page-subtitle">Aaj ka overview</div>
+      <div class="stats-row">
+        <div class="stat-card"><div class="stat-icon">📄</div><div class="stat-val" id="d-notes">–</div><div class="stat-lbl">Total Notes</div></div>
+        <div class="stat-card"><div class="stat-icon">👥</div><div class="stat-val" id="d-users">–</div><div class="stat-lbl">Registered Users</div></div>
+        <div class="stat-card"><div class="stat-icon">💰</div><div class="stat-val" id="d-premium">–</div><div class="stat-lbl">Premium Notes</div></div>
+        <div class="stat-card"><div class="stat-icon">🆓</div><div class="stat-val" id="d-free">–</div><div class="stat-lbl">Free Notes</div></div>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header"><h3>Recent Notes</h3></div>
+        <table><thead><tr><th>Title</th><th>Subject</th><th>Type</th><th>Date</th></tr></thead>
+        <tbody id="recent-tbody"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:2rem">Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+
+    <!-- UPLOAD -->
+    <div class="page" id="page-upload">
+      <div class="page-title">Note Upload Karo</div>
+      <div class="page-subtitle">Naya note add karo website pe</div>
+      <div class="form-card">
+        <div class="form-grid">
+          <div class="form-group form-full">
+            <label>Note Title *</label>
+            <input type="text" id="note-title" placeholder="e.g. Newton's Laws of Motion — Complete Notes">
+          </div>
+          <div class="form-group">
+            <label>Subject *</label>
+            <select id="note-subject">
+              <option value="">Subject chuno</option>
+              <option>Physics</option><option>Chemistry</option><option>Mathematics</option>
+              <option>Biology</option><option>History</option><option>Geography</option>
+              <option>Hindi</option><option>English</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Class</label>
+            <select id="note-class">
+              <option value="">Class chuno</option>
+              <option>Class 9</option><option>Class 10</option>
+              <option>Class 11</option><option>Class 12</option>
+              <option>JEE/NEET</option>
+            </select>
+          </div>
+          <div class="form-group form-full">
+            <label>Description *</label>
+            <textarea id="note-desc" placeholder="Note ke baare mein brief description..."></textarea>
+          </div>
+          <div class="form-group">
+            <label>Pages</label>
+            <input type="number" id="note-pages" placeholder="e.g. 12" min="1">
+          </div>
+          <div class="form-group">
+            <div class="toggle-row">
+              <div>
+                <label style="margin:0">Premium Note? 👑</label>
+                <div style="font-size:0.78rem;color:var(--muted);margin-top:2px">Paid hoga students ke liye</div>
+              </div>
+              <label class="toggle">
+                <input type="checkbox" id="note-premium" onchange="togglePrice()">
+                <span class="slider"></span>
+              </label>
+            </div>
+          </div>
+          <div class="form-group" id="price-field" style="display:none">
+            <label>Price (₹) *</label>
+            <input type="number" id="note-price" placeholder="e.g. 99" min="1">
+          </div>
+          <div class="form-group form-full">
+            <label>PDF File Upload *</label>
+            <div class="file-drop" id="drop-zone" onclick="document.getElementById('file-input').click()"
+              ondragover="handleDrag(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event)">
+              <div style="font-size:2rem">📄</div>
+              <p><strong>Click karke file chuno</strong> ya yahan drag karo</p>
+              <p>Only PDF · Max 10MB</p>
+              <div class="file-name" id="file-name"></div>
+              <input type="file" id="file-input" accept=".pdf" onchange="handleFile(this.files[0])">
+            </div>
+            <div class="progress-bar" id="progress-bar">
+              <div class="progress-fill" id="progress-fill"></div>
+            </div>
+          </div>
+        </div>
+        <div class="submit-row">
+          <button class="btn-submit" onclick="uploadNote()">⬆️ Note Upload Karo</button>
+          <button class="btn-reset" onclick="resetForm()">Reset</button>
+        </div>
+        <div class="upload-msg" id="upload-msg"></div>
+      </div>
+    </div>
+
+    <!-- MANAGE -->
+    <div class="page" id="page-manage">
+      <div class="page-title">Notes Manage Karo</div>
+      <div class="page-subtitle">Sabhi notes dekhna aur delete karna</div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <h3>All Notes (<span id="manage-count">0</span>)</h3>
+          <input style="padding:0.4rem 0.8rem;border:1.5px solid var(--border);border-radius:8px;font-family:DM Sans;font-size:0.85rem;outline:none" placeholder="Search..." oninput="filterManageTable(this.value)">
+        </div>
+        <table><thead><tr><th>Title</th><th>Subject</th><th>Class</th><th>Type</th><th>Date</th><th>Action</th></tr></thead>
+        <tbody id="manage-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem">Loading...</td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FIREBASE SDK -->
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
+
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyD4FywhcPm-izOPO-MIEwhVovPAuCkNQzo",
+    authDomain: "shubhamnotes-cc06b.firebaseapp.com",
+    projectId: "shubhamnotes-cc06b",
+    storageBucket: "shubhamnotes-cc06b.firebasestorage.app",
+    messagingSenderId: "917281941942",
+    appId: "1:917281941942:web:283ab6b357ba7640e3f917",
+    measurementId: "G-79Z7J8LCY0"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
+</script>
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+
+  let allManageNotes = [];
+  let selectedFile = null;
+
+  // LOAD NOTES
+  async function loadAllNotes() {
+    try {
+      const q = query(collection(db, 'notes'), orderBy('createdAt', 'desc'));
+      const snap = await getDocs(q);
+      allManageNotes = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      const total = allManageNotes.length;
+      const premium = allManageNotes.filter(n => n.isPremium).length;
+      const free = total - premium;
+      document.getElementById('d-notes').textContent = total;
+      document.getElementById('d-premium').textContent = premium;
+      document.getElementById('d-free').textContent = free;
+      document.getElementById('d-users').textContent = '–';
+      document.getElementById('manage-count').textContent = total;
+      renderRecentTable(allManageNotes.slice(0, 5));
+      renderManageTable(allManageNotes);
+    } catch(e) {
+      console.error(e);
+    }
+  }
+
+  function renderRecentTable(notes) {
+    document.getElementById('recent-tbody').innerHTML = notes.map(n => `
+      <tr>
+        <td>${n.title}</td>
+        <td>${n.subject}</td>
+        <td><span class="pill ${n.isPremium ? 'pill-premium' : 'pill-free'}">${n.isPremium ? `₹${n.price}` : 'Free'}</span></td>
+        <td>${n.createdAt?.toDate ? n.createdAt.toDate().toLocaleDateString('hi') : '–'}</td>
+      </tr>`).join('') || '<tr><td colspan="4" style="text-align:center;color:var(--muted)">Koi notes nahi</td></tr>';
+  }
+
+  function renderManageTable(notes) {
+    document.getElementById('manage-tbody').innerHTML = notes.map(n => `
+      <tr>
+        <td style="max-width:200px">${n.title}</td>
+        <td>${n.subject}</td>
+        <td>${n.class || '–'}</td>
+        <td><span class="pill ${n.isPremium ? 'pill-premium' : 'pill-free'}">${n.isPremium ? `👑 ₹${n.price}` : 'Free'}</span></td>
+        <td>${n.createdAt?.toDate ? n.createdAt.toDate().toLocaleDateString('hi') : '–'}</td>
+        <td><button class="del-btn" onclick="deleteNote('${n.id}')">🗑️</button></td>
+      </tr>`).join('') || '<tr><td colspan="6" style="text-align:center;color:var(--muted)">Koi notes nahi</td></tr>';
+  }
+
+  window.filterManageTable = function(q) {
+    const filtered = allManageNotes.filter(n => n.title.toLowerCase().includes(q.toLowerCase()) || n.subject.toLowerCase().includes(q.toLowerCase()));
+    renderManageTable(filtered);
+  };
+
+  // UPLOAD
+  window.handleFile = function(file) {
+    if (!file) return;
+    if (file.type !== 'application/pdf') { showUploadMsg('Sirf PDF files allowed hain', 'error'); return; }
+    if (file.size > 10 * 1024 * 1024) { showUploadMsg('File 10MB se badi hai', 'error'); return; }
+    selectedFile = file;
+    document.getElementById('file-name').textContent = `✓ ${file.name}`;
+  };
+
+  window.uploadNote = async function() {
+    const title = document.getElementById('note-title').value.trim();
+    const subject = document.getElementById('note-subject').value;
+    const desc = document.getElementById('note-desc').value.trim();
+    const isPremium = document.getElementById('note-premium').checked;
+    const price = parseFloat(document.getElementById('note-price').value) || 0;
+    const pages = parseInt(document.getElementById('note-pages').value) || null;
+    const noteClass = document.getElementById('note-class').value;
+
+    if (!title || !subject || !desc) { showUploadMsg('Title, Subject aur Description zaroori hai', 'error'); return; }
+    if (!selectedFile) { showUploadMsg('PDF file select karo', 'error'); return; }
+    if (isPremium && !price) { showUploadMsg('Premium note ke liye price daalo', 'error'); return; }
+
+    // Upload to Firebase Storage
+    const storageRef = ref(storage, `notes/${Date.now()}_${selectedFile.name}`);
+    const task = uploadBytesResumable(storageRef, selectedFile);
+
+    document.getElementById('progress-bar').style.display = 'block';
+    task.on('state_changed',
+      snap => {
+        const pct = (snap.bytesTransferred / snap.totalBytes) * 100;
+        document.getElementById('progress-fill').style.width = pct + '%';
+      },
+      err => showUploadMsg('Upload failed: ' + err.message, 'error'),
+      async () => {
+        const fileUrl = await getDownloadURL(task.snapshot.ref);
+        await addDoc(collection(db, 'notes'), {
+          title, subject, description: desc, isPremium, price: isPremium ? price : 0,
+          pages, class: noteClass, fileUrl, createdAt: serverTimestamp()
+        });
+        showUploadMsg('✓ Note successfully upload ho gaya!', 'success');
+        resetForm();
+        loadAllNotes();
+      }
+    );
+  };
+
+  window.deleteNote = async function(id) {
+    if (!confirm('Is note ko delete karna chahte ho?')) return;
+    await deleteDoc(doc(db, 'notes', id));
+    loadAllNotes();
+  };
+
+  function showUploadMsg(msg, type) {
+    const el = document.getElementById('upload-msg');
+    el.textContent = msg; el.className = `upload-msg ${type}`;
+  }
+
+  window.resetForm = function() {
+    document.getElementById('note-title').value = '';
+    document.getElementById('note-subject').value = '';
+    document.getElementById('note-desc').value = '';
+    document.getElementById('note-pages').value = '';
+    document.getElementById('note-premium').checked = false;
+    document.getElementById('note-price').value = '';
+    document.getElementById('note-class').value = '';
+    document.getElementById('file-name').textContent = '';
+    document.getElementById('progress-bar').style.display = 'none';
+    document.getElementById('progress-fill').style.width = '0%';
+    document.getElementById('upload-msg').className = 'upload-msg';
+    selectedFile = null;
+    togglePrice();
+  };
+
+  loadAllNotes();
+</script>
+
+<script>
+  // GATE
+  const ADMIN_PASS = "shubham123"; // 🔒 Apna password yahan set karo
+  function checkGate() {
+    if (document.getElementById('gate-pass').value === ADMIN_PASS) {
+      document.getElementById('admin-gate').style.display = 'none';
+    } else {
+      document.getElementById('gate-err').style.display = 'block';
+      document.getElementById('gate-pass').value = '';
+    }
+  }
+  document.getElementById('gate-pass').addEventListener('keypress', e => { if (e.key === 'Enter') checkGate(); });
+
+  // NAV
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    event.target.classList.add('active');
+  }
+
+  // TOGGLE
+  function togglePrice() {
+    document.getElementById('price-field').style.display = document.getElementById('note-premium').checked ? 'block' : 'none';
+  }
+
+  // DRAG & DROP
+  function handleDrag(e) { e.preventDefault(); document.getElementById('drop-zone').classList.add('dragover'); }
+  function handleDragLeave() { document.getElementById('drop-zone').classList.remove('dragover'); }
+  function handleDrop(e) {
+    e.preventDefault();
+    document.getElementById('drop-zone').classList.remove('dragover');
+    handleFile(e.dataTransfer.files[0]);
+  }
+</script>
+</body>
+</html>
